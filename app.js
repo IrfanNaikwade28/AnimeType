@@ -661,7 +661,6 @@ function renderResult(result, mbtiType) {
       </div>
       <div class="result-char-info">
         <div class="result-fancy-name">${state.userName} <span class="as-mark">AS</span> ${result.characterName || 'Unknown'}</div>
-        <div class="result-series">${result.animeSeries || ''}</div>
         <div class="result-desc">${result.description || ''}</div>
       </div>
     </div>
