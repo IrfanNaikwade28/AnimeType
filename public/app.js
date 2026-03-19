@@ -85,10 +85,22 @@ function lookupCharacter(characterName) {
 // =============================================
 // ENVIRONMENT CONFIG
 // =============================================
-// Replace the value in config.js with your Groq API key.
-// Get a free key at https://console.groq.com
-const GROQ_API_KEY = CONFIG.GROQ_API_KEY;
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+// API key is now securely stored in environment variables (.env)
+// The frontend calls /api/match which handles the Groq API request server-side
+function getApiUrl() {
+  const configuredBase = window.ANIMATYPE_API_BASE_URL || localStorage.getItem('animatype_api_base_url');
+  if (configuredBase) {
+    return `${configuredBase.replace(/\/$/, '')}/api/match`;
+  }
+
+  if (window.location.port === '3000') {
+    return '/api/match';
+  }
+
+  return 'http://localhost:3000/api/match';
+}
+
+const API_MATCH_URL = getApiUrl();
 
 // =============================================
 // THEME MANAGEMENT
@@ -685,12 +697,6 @@ async function submitForm() {
   const err = document.getElementById('step4Error');
   err.textContent = '';
 
-  // Validate API key is configured
-  if (!GROQ_API_KEY || GROQ_API_KEY === 'gsk_your_groq_api_key_here') {
-    err.textContent = 'API key not configured. Please set GROQ_API_KEY in config.js.';
-    return;
-  }
-
   state.openQ1 = document.getElementById('openQ1').value;
   state.openQ2 = document.getElementById('openQ2').value;
   state.openQ3 = document.getElementById('openQ3').value;
@@ -705,32 +711,30 @@ async function submitForm() {
   btnText.style.display = 'none';
   btnLoader.style.display = 'flex';
 
-  const prompt = buildPrompt(mbtiType);
-
   try {
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    // Call our secure serverless function instead of Groq directly
+    const response = await fetch(API_MATCH_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${GROQ_API_KEY}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: GROQ_MODEL,
-        max_tokens: 600,
-        temperature: 0.8,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert in anime psychology and MBTI personality matching. Always respond with valid JSON only. No markdown, no extra text.'
-          },
-          { role: 'user', content: prompt }
-        ]
+        mbtiType,
+        openQ1: state.openQ1,
+        openQ2: state.openQ2,
+        openQ3: state.openQ3,
+        userName: state.userName,
+        userAge: state.userAge,
+        userGender: state.userGender
       })
     });
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      throw new Error(errData?.error?.message || `API error: ${response.status}`);
+      if (response.status === 405) {
+        throw new Error('API route returned 405. Run `vercel dev` and open http://localhost:3000/public/app.html');
+      }
+      throw new Error(errData?.error || `API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -746,6 +750,10 @@ async function submitForm() {
     goToStep('result');
 
   } catch (e) {
+    if (e instanceof TypeError && /fetch/i.test(e.message)) {
+      err.textContent = 'Cannot reach API server. Start `vercel dev` and open http://localhost:3000/public/app.html';
+      return;
+    }
     err.textContent = e.message || 'Something went wrong. Try again.';
   } finally {
     btn.disabled = false;
@@ -754,42 +762,7 @@ async function submitForm() {
   }
 }
 
-function buildPrompt(mbtiType) {
-  const availableChars = getFilteredCharacters(state.userGender);
-  const charList = availableChars.join('\n  - ');
-
-  return `Task: Match the user to the single most compatible anime character from the provided list.
-
-USER PROFILE:
-- Name: ${state.userName}
-- Age: ${state.userAge}
-- Gender Profile: ${state.userGender}
-- Primary MBTI (Calculated): ${mbtiType}
-- Favorite Color: ${state.favColor}
-- Hobbies: ${state.hobbies.join(', ') || 'Various'}
-- Anime Interests: ${state.animeGenre || 'General'}
-- Philosophical Outlook (World): "${state.openQ1 || 'No data'}"
-- Internal Drive: "${state.openQ2 || 'No data'}"
-- External Perception: "${state.openQ3 || 'No data'}"
-
-CHARACTER CANDIDATES (Choose ONLY from this list, use the EXACT name):
-  - ${charList}
-
-MATCHING LOGIC:
-1. MBTI CONGRUENCE: Prioritize characters whose MBTI matches or is closely related to the Primary MBTI (${mbtiType}).
-2. PSYCHOLOGICAL ALIGNMENT: Analyze the user's open-ended answers ("Ideal world", "Driven by", "How others see them") to find deep-seated traits that mirror the character's canon personality.
-3. GENDER CONSISTENCY: Ensure the character matches the user's identified gender (${state.userGender}).
-
-EXPECTED JSON RESPONSE (Strictly JSON, no markdown tags):
-{
-  "characterName": "Exact name from list",
-  "animeSeries": "Name of the anime",
-  "matchPercentage": 1-100,
-  "traits": ["Four", "Distinct", "Key", "Traits"],
-  "description": "A compelling 3-sentence explanation of why this character is their anime counterpart, specifically referencing their MBTI ${mbtiType} and their personal answers.",
-  "mbtiType": "${mbtiType}"
-}`;
-}
+// buildPrompt is now handled server-side in /api/match.js
 
 // =============================================
 // RENDER RESULT

@@ -1,0 +1,23 @@
+{
+  "name": "animatype",
+  "version": "1.0.0",
+  "description": "Find your anime twin soul through MBTI personality matching. Powered by AI, featuring 200+ iconic anime characters.",
+  "type": "module",
+  "scripts": {
+    "dev": "npx vercel dev",
+    "deploy": "npx vercel --prod"
+  },
+  "keywords": [
+    "anime",
+    "mbti",
+    "personality",
+    "ai",
+    "groq",
+    "vercel"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "",
+  "license": "MIT"
+}
