@@ -863,48 +863,118 @@ async function downloadCard() {
   if (!card) return;
 
   try {
-    const bgDeep = getComputedStyle(document.documentElement).getPropertyValue('--bg-deep').trim() || '#050816';
-    document.body.classList.add('downloading');
+    // Extract current result data from the rendered card
+    const userRow = card.querySelector('.result-user-row');
+    const userNameText = userRow ? userRow.querySelector('.result-user-name')?.textContent : '';
+    const mbtiBadgeText = userRow ? userRow.querySelector('.result-mbti-badge')?.textContent : '';
+
+    const titleUser = card.querySelector('.result-title-user')?.textContent?.trim() || (state.userName || 'User');
+    const titleChar = card.querySelector('.result-title-char')?.textContent?.trim() || 'Unknown';
+    const fancyName = `${titleUser} AS ${titleChar}`;
+
+    const desc = card.querySelector('.result-desc')?.textContent || '';
+    const matchPct = card.querySelector('.match-pct-val')?.textContent || '0%';
+    const imgEl = card.querySelector('.result-char-img img');
+    const imgSrc = imgEl ? imgEl.src : '';
+    const traits = Array.from(card.querySelectorAll('.trait-tag')).map(t => t.textContent);
+
+    // Create the story-style export card (layout like before)
+    const storyCard = document.createElement('div');
+    storyCard.style.cssText = `
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 1080px;
+      height: 1920px;
+      background: #050816;
+      background-image: radial-gradient(circle at 20% 50%, rgba(139, 92, 246, 0.10) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.10) 0%, transparent 50%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 100px 80px;
+      box-sizing: border-box;
+      color: #e2e8f0;
+      opacity: 0.01;
+      pointer-events: none;
+    `;
+
+    storyCard.innerHTML = `
+      <div style="width: 100%; max-width: 900px; display: flex; flex-direction: column; align-items: center; gap: 48px; font-family: 'Syne', sans-serif;">
+        <div style="width: 100%; height: 6px; background: linear-gradient(90deg, #8b5cf6, #ec4899, #f59e0b, #10b981); border-radius: 10px; margin-bottom: 20px;"></div>
+
+        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div style="font-size: 1rem; letter-spacing: 2px; color: #94a3b8; font-weight: 600; font-family: 'Orbitron', sans-serif;">${userNameText}</div>
+          <div style="font-size: 1.2rem; font-weight: 800; letter-spacing: 3px; padding: 10px 24px; border-radius: 30px; background: rgba(139, 92, 246, 0.2); border: 2px solid #8b5cf6; color: #a78bfa; font-family: 'Orbitron', sans-serif;">${mbtiBadgeText}</div>
+        </div>
+
+        <div style="width: 450px; height: 450px; border-radius: 24px; overflow: hidden; border: 4px solid rgba(139, 92, 246, 0.5); box-shadow: 0 24px 64px rgba(139, 92, 246, 0.4); background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(34, 211, 238, 0.1)); display: flex; align-items: center; justify-content: center;">
+          ${imgSrc ? `<img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" crossorigin="anonymous" />` : '<div style="font-size: 6rem;">🌸</div>'}
+        </div>
+
+        <div style="font-family: 'Cinzel Decorative', serif; font-size: 3.6rem; text-align: center; line-height: 1.15; margin-top: 20px; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; background: linear-gradient(90deg, #a78bfa, #f472b6, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent;">
+          ${fancyName}
+        </div>
+
+        <div style="font-size: 1.4rem; line-height: 1.8; text-align: center; color: #cbd5e1; max-width: 850px;">
+          ${desc}
+        </div>
+
+        <div style="width: 100%; margin-top: 30px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div style="font-size: 1.1rem; font-weight: 800; letter-spacing: 2px; color: #a78bfa; font-family: 'Orbitron', sans-serif;">⚡ SOUL RESONANCE</div>
+            <div style="font-size: 2rem; font-weight: 900; color: #10b981; font-family: 'Orbitron', sans-serif;">${matchPct}</div>
+          </div>
+          <div style="width: 100%; height: 24px; background: rgba(139, 92, 246, 0.1); border-radius: 12px; overflow: hidden; border: 1px solid rgba(139, 92, 246, 0.3);">
+            <div style="height: 100%; width: ${matchPct}; background: linear-gradient(90deg, #8b5cf6, #ec4899, #10b981); border-radius: 12px; box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);"></div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; margin-top: 30px;">
+          ${traits.map(t => `<div style="padding: 12px 24px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); border-radius: 30px; font-size: 1rem; color: #e2e8f0; font-family: 'Orbitron', sans-serif;">${t}</div>`).join('')}
+        </div>
+
+        <div style="margin-top: 50px; font-size: 1.2rem; letter-spacing: 3px; color: #64748b; font-weight: 700; font-family: 'Orbitron', sans-serif;">
+          ✦ ANIMATYPE ✦
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(storyCard);
 
     if (document.fonts?.ready) {
       await document.fonts.ready;
     }
 
-    // Ensure images in the card are loaded before rendering
-    const images = card.querySelectorAll('img');
-    if (images.length > 0) {
-      await Promise.all(Array.from(images).map(img => {
+    const storyImages = storyCard.querySelectorAll('img');
+    if (storyImages.length > 0) {
+      await Promise.all(Array.from(storyImages).map(img => {
         if (img.complete) return Promise.resolve();
         return new Promise(resolve => {
           img.onload = resolve;
           img.onerror = resolve;
-          setTimeout(resolve, 2000);
+          setTimeout(resolve, 2500);
         });
       }));
     }
 
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await new Promise(resolve => setTimeout(resolve, 250));
 
-    const rect = card.getBoundingClientRect();
-    const scale = window.innerWidth <= 480 ? 1 : 2;
-
-    const canvas = await html2canvas(card, {
-      backgroundColor: bgDeep,
-      scale,
+    const canvas = await html2canvas(storyCard, {
+      backgroundColor: '#050816',
+      scale: 1,
+      width: 1080,
+      height: 1920,
       useCORS: true,
       allowTaint: false,
-      logging: false,
-      foreignObjectRendering: true,
-      scrollX: 0,
-      scrollY: 0,
-      width: Math.ceil(rect.width),
-      height: Math.ceil(rect.height)
+      logging: false
     });
 
-    document.body.classList.remove('downloading');
+    document.body.removeChild(storyCard);
 
     const link = document.createElement('a');
-    link.download = `animatype_${(state.userName || 'result').replace(/\s+/g, '_')}_card.png`;
+    link.download = `animatype_${(state.userName || 'result').replace(/\s+/g, '_')}_story.png`;
     link.href = canvas.toDataURL('image/png', 0.95);
     link.click();
 
@@ -914,7 +984,6 @@ async function downloadCard() {
       window.location.href = 'index.html';
     }, 1500); // Small delay to ensure download starts
   } catch (e) {
-    document.body.classList.remove('downloading');
     console.error('Download error:', e);
     alert('Download failed. Try right-clicking the card and saving as image.');
   }
