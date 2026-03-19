@@ -409,6 +409,8 @@ let state = {
   openQ3: ''
 };
 
+let lastResult = null;
+
 function saveState() {
   localStorage.setItem('animatype_state', JSON.stringify(state));
 }
@@ -747,6 +749,7 @@ async function submitForm() {
       throw new Error('Failed to parse AI response. Please try again.');
     }
 
+    lastResult = result;
     renderResult(result, mbtiType);
     goToStep('result');
 
@@ -870,7 +873,7 @@ async function downloadCard() {
 
     const titleUser = card.querySelector('.result-title-user')?.textContent?.trim() || (state.userName || 'User');
     const titleChar = card.querySelector('.result-title-char')?.textContent?.trim() || 'Unknown';
-    const fancyName = `${titleUser} AS ${titleChar}`;
+    const animeName = (lastResult?.anime || '').toString().trim();
 
     const desc = card.querySelector('.result-desc')?.textContent || '';
     const matchPct = card.querySelector('.match-pct-val')?.textContent || '0%';
@@ -880,6 +883,7 @@ async function downloadCard() {
 
     // Create the story-style export card (layout like before)
     const storyCard = document.createElement('div');
+    storyCard.id = 'exportStoryCard';
     storyCard.style.cssText = `
       position: fixed;
       left: 0;
@@ -896,7 +900,7 @@ async function downloadCard() {
       padding: 100px 80px;
       box-sizing: border-box;
       color: #e2e8f0;
-      opacity: 0.01;
+      visibility: hidden;
       pointer-events: none;
     `;
 
@@ -913,8 +917,20 @@ async function downloadCard() {
           ${imgSrc ? `<img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: cover;" crossorigin="anonymous" />` : '<div style="font-size: 6rem;">🌸</div>'}
         </div>
 
-        <div style="font-family: 'Cinzel Decorative', serif; font-size: 3.6rem; text-align: center; line-height: 1.15; margin-top: 20px; letter-spacing: 1px; font-weight: 700; text-transform: uppercase; background: linear-gradient(90deg, #a78bfa, #f472b6, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent;">
-          ${fancyName}
+        <!-- Title (match image-2 layout) -->
+        <div style="width: 100%; margin-top: 26px; text-align: center;">
+          <div style="font-family: 'Cinzel Decorative', serif; font-size: 2.8rem; letter-spacing: 6px; font-weight: 700; text-transform: uppercase; color: rgba(226, 232, 240, 0.9);">
+            ${titleUser}
+          </div>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 18px; margin: 10px 0 8px;">
+            <div style="height: 1px; flex: 1; background: rgba(226, 232, 240, 0.25);"></div>
+            <div style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 10px; font-weight: 800; color: rgba(167, 139, 250, 0.9);">AS</div>
+            <div style="height: 1px; flex: 1; background: rgba(226, 232, 240, 0.25);"></div>
+          </div>
+          <div style="font-family: 'Cinzel Decorative', serif; font-size: 4.2rem; line-height: 1.05; letter-spacing: 2px; font-weight: 900; text-transform: uppercase; background: linear-gradient(90deg, #a78bfa, #f472b6, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent;">
+            ${titleChar}
+          </div>
+          ${animeName ? `<div style="margin-top: 10px; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 8px; text-transform: uppercase; color: rgba(148, 163, 184, 0.55);">${animeName}</div>` : ''}
         </div>
 
         <div style="font-size: 1.4rem; line-height: 1.8; text-align: center; color: #cbd5e1; max-width: 850px;">
@@ -968,7 +984,13 @@ async function downloadCard() {
       height: 1920,
       useCORS: true,
       allowTaint: false,
-      logging: false
+      logging: false,
+      onclone: (doc) => {
+        const el = doc.getElementById('exportStoryCard');
+        if (el) {
+          el.style.visibility = 'visible';
+        }
+      }
     });
 
     document.body.removeChild(storyCard);
