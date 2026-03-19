@@ -884,24 +884,19 @@ async function downloadCard() {
     const safeTitleUser = escapeHtml(titleUser.toUpperCase());
     const safeTitleChar = escapeHtml(titleChar.toUpperCase());
     const safeAnimeName = escapeHtml(animeName.toUpperCase());
-    const gradId = `grad_${Date.now()}`;
-    const titleCharSvg = `
-      <svg width="900" height="140" viewBox="0 0 900 140" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
-        <defs>
-          <linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="#a78bfa"/>
-            <stop offset="50%" stop-color="#f472b6"/>
-            <stop offset="100%" stop-color="#fbbf24"/>
-          </linearGradient>
-        </defs>
-        <text x="50%" y="95" text-anchor="middle"
-          font-family="Cinzel Decorative, serif"
-          font-size="92"
-          font-weight="900"
-          letter-spacing="2"
-          fill="url(#${gradId})"
-          textLength="860" lengthAdjust="spacingAndGlyphs">${safeTitleChar}</text>
-      </svg>
+    // NOTE: Avoid inline SVG <text> here.
+    // html2canvas can drop SVG text in the rasterized output on some browsers,
+    // which made the character name missing in downloaded images.
+    // Instead, use an HTML title with a solid-color fallback and an optional gradient overlay.
+    const titleCharHtml = `
+      <div style="position: relative; width: 100%; display: flex; align-items: center; justify-content: center; padding: 6px 0 0;">
+        <div style="font-family: 'Cinzel Decorative', serif; font-size: 5.4rem; font-weight: 900; letter-spacing: 2px; line-height: 1.05; text-transform: uppercase; text-align: center; color: rgba(226, 232, 240, 0.92);">
+          ${safeTitleChar}
+        </div>
+        <div aria-hidden="true" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Cinzel Decorative', serif; font-size: 5.4rem; font-weight: 900; letter-spacing: 2px; line-height: 1.05; text-transform: uppercase; text-align: center; background: linear-gradient(90deg, #a78bfa, #f472b6, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent; opacity: 0.95;">
+          ${safeTitleChar}
+        </div>
+      </div>
     `.trim();
 
     const desc = card.querySelector('.result-desc')?.textContent || '';
@@ -956,7 +951,7 @@ async function downloadCard() {
             <div style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 10px; font-weight: 800; color: rgba(167, 139, 250, 0.9);">AS</div>
             <div style="height: 1px; flex: 1; background: rgba(226, 232, 240, 0.25);"></div>
           </div>
-          ${titleCharSvg}
+          ${titleCharHtml}
           ${animeName ? `<div style="margin-top: 6px; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 8px; text-transform: uppercase; color: rgba(148, 163, 184, 0.55);">${safeAnimeName}</div>` : ''}
         </div>
 
