@@ -788,7 +788,11 @@ function renderResult(result, mbtiType) {
         <div id="charEmoji" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:3rem">🌸</div>
       </div>
       <div class="result-char-info">
-        <div class="result-fancy-name">${state.userName} <span class="as-mark">AS</span> ${result.characterName || 'Unknown'}</div>
+        <div class="result-fancy-name">
+          <div class="result-title-user">${(state.userName || 'User')}</div>
+          <div class="result-title-as">AS</div>
+          <div class="result-title-char">${result.characterName || 'Unknown'}</div>
+        </div>
         <div class="result-desc">${result.description || ''}</div>
       </div>
     </div>
@@ -909,7 +913,7 @@ async function downloadCard() {
         </div>
 
         <!-- Character name -->
-        <div style="font-family: 'Pacifico', cursive; font-size: 3.5rem; text-align: center; line-height: 1.3; margin-top: 20px;">
+        <div style="font-family: 'Orbitron', sans-serif; font-size: 3.1rem; text-align: center; line-height: 1.15; margin-top: 20px; letter-spacing: 2px; font-weight: 900; text-transform: uppercase;">
           ${fancyName}
         </div>
 

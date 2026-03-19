@@ -2102,31 +2102,41 @@ transition: color var(--transition);
 }
 
 .result-fancy-name {
-  font-family: 'Pacifico', cursive;
-  font-size: 2.8rem;
-  line-height: 1.3;
   margin-bottom: 12px;
+  word-wrap: break-word;
+}
+
+.result-title-user {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.result-title-as {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.result-title-char {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   background: linear-gradient(90deg, var(--violet-bright), var(--magenta-bright), var(--amber-bright));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  word-wrap: break-word;
-  font-weight: 400;
-  letter-spacing: 1px;
-}
-
-.result-fancy-name .as-mark {
-  font-family: 'Pacifico', cursive;
-  background: linear-gradient(90deg, var(--violet-bright), var(--magenta-bright), var(--amber-bright));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 0.85rem;
-  letter-spacing: 2px;
-  vertical-align: middle;
-  opacity: 0.85;
-  margin: 0 10px;
-  -webkit-text-fill-color: var(--text-muted);
-  color: var(--text-muted);
 }
 
 .result-series {
@@ -2312,6 +2322,9 @@ body.downloading .result-card {
 
 body.downloading .result-fancy-name {
   filter: none !important;
+}
+
+body.downloading .result-title-char {
   -webkit-text-fill-color: initial !important;
   background: linear-gradient(90deg, var(--violet-bright), var(--magenta-bright), var(--amber-bright)) !important;
   -webkit-background-clip: text !important;
@@ -2622,7 +2635,19 @@ body.downloading .match-pct-val {
 }
 
 .result-fancy-name {
-  font-size: 1.6rem;
+  margin-bottom: 10px;
+}
+
+.result-title-user {
+  font-size: 0.85rem;
+}
+
+.result-title-as {
+  font-size: 0.6rem;
+}
+
+.result-title-char {
+  font-size: 1.5rem;
 }
 
 .result-user-name {
