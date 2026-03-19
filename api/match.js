@@ -81,53 +81,112 @@ export default async function handler(req, res) {
   }
 }
 
-// Helper function to build the AI prompt
-function buildPrompt(mbtiType, openQ1, openQ2, openQ3, userName, userAge, userGender) {
-  const allowedCharacters = [
-    'Sasuke Uchiha', 'Mei Mei', 'Erwin Smith', 'Sylvia Sherwood', 'Kakashi Hatake', 'Frieren',
-    'Satoru Gojo', 'Nico Robin', 'Itachi Uchiha', 'Tamayo', 'Gaara', 'Hinata Hyuga',
-    'Tanjiro Kamado', 'Tsunade', 'Naruto Uzumaki', 'Kyoko Hori', 'Levi Ackerman', 'Mikasa Ackerman',
-    'Isagi Yoichi', 'Noelle Silva', 'Kunigami Rensuke', 'Maki Zenin', 'Rock Lee', 'Sakura Haruno',
-    'Roronoa Zoro', 'Mereoleona Vermillion', 'Eren Yeager', 'Nezuko Kamado', 'Inosuke Hashibira',
-    'Temari', 'Asta', 'Kushina Uzumaki'
-  ];
+// =============================================
+// CHARACTER DATABASE (selection metadata)
+// =============================================
+// Keep this server-side so the model can be constrained to the exact
+// characters available in the UI and can reason about MBTI/gender.
+const CHARACTER_DB = {
+  // INTJ
+  'Sasuke Uchiha': { gender: 'Male', series: 'Naruto', mbti: 'INTJ' },
+  'Mei Mei': { gender: 'Female', series: 'Jujutsu Kaisen', mbti: 'INTJ' },
+  // ENTJ
+  'Erwin Smith': { gender: 'Male', series: 'Attack on Titan', mbti: 'ENTJ' },
+  'Sylvia Sherwood': { gender: 'Female', series: 'Spy x Family', mbti: 'ENTJ' },
+  // INTP
+  'Kakashi Hatake': { gender: 'Male', series: 'Naruto', mbti: 'INTP' },
+  'Frieren': { gender: 'Female', series: "Frieren: Beyond Journey's End", mbti: 'INTP' },
+  // ENTP
+  'Satoru Gojo': { gender: 'Male', series: 'Jujutsu Kaisen', mbti: 'ENTP' },
+  'Nico Robin': { gender: 'Female', series: 'One Piece', mbti: 'ENTP' },
+  // INFJ
+  'Itachi Uchiha': { gender: 'Male', series: 'Naruto', mbti: 'INFJ' },
+  'Tamayo': { gender: 'Female', series: 'Demon Slayer', mbti: 'INFJ' },
+  // INFP
+  'Gaara': { gender: 'Male', series: 'Naruto', mbti: 'INFP' },
+  'Hinata Hyuga': { gender: 'Female', series: 'Naruto', mbti: 'INFP' },
+  // ENFJ
+  'Tanjiro Kamado': { gender: 'Male', series: 'Demon Slayer', mbti: 'ENFJ' },
+  'Tsunade': { gender: 'Female', series: 'Naruto', mbti: 'ENFJ' },
+  // ENFP
+  'Naruto Uzumaki': { gender: 'Male', series: 'Naruto', mbti: 'ENFP' },
+  'Kyoko Hori': { gender: 'Female', series: 'Horimiya', mbti: 'ENFP' },
+  // ISTJ
+  'Levi Ackerman': { gender: 'Male', series: 'Attack on Titan', mbti: 'ISTJ' },
+  'Mikasa Ackerman': { gender: 'Female', series: 'Attack on Titan', mbti: 'ISTJ' },
+  // ISFJ
+  'Isagi Yoichi': { gender: 'Male', series: 'Blue Lock', mbti: 'ISFJ' },
+  'Noelle Silva': { gender: 'Female', series: 'Black Clover', mbti: 'ISFJ' },
+  // ESTJ
+  'Kunigami Rensuke': { gender: 'Male', series: 'Blue Lock', mbti: 'ESTJ' },
+  'Maki Zenin': { gender: 'Female', series: 'Jujutsu Kaisen', mbti: 'ESTJ' },
+  // ESFJ
+  'Rock Lee': { gender: 'Male', series: 'Naruto', mbti: 'ESFJ' },
+  'Sakura Haruno': { gender: 'Female', series: 'Naruto', mbti: 'ESFJ' },
+  // ISTP
+  'Roronoa Zoro': { gender: 'Male', series: 'One Piece', mbti: 'ISTP' },
+  'Mereoleona Vermillion': { gender: 'Female', series: 'Black Clover', mbti: 'ISTP' },
+  // ISFP
+  'Eren Yeager': { gender: 'Male', series: 'Attack on Titan', mbti: 'ISFP' },
+  'Nezuko Kamado': { gender: 'Female', series: 'Demon Slayer', mbti: 'ISFP' },
+  // ESTP
+  'Inosuke Hashibira': { gender: 'Male', series: 'Demon Slayer', mbti: 'ESTP' },
+  'Temari': { gender: 'Female', series: 'Naruto', mbti: 'ESTP' },
+  // ESFP
+  'Asta': { gender: 'Male', series: 'Black Clover', mbti: 'ESFP' },
+  'Kushina Uzumaki': { gender: 'Female', series: 'Naruto', mbti: 'ESFP' }
+};
 
-  return `
-You are matching a person to an anime character based on their MBTI type and personal answers.
-
-**MBTI Type:** ${mbtiType}
-**Name:** ${userName || 'User'}
-**Age:** ${userAge || 'Not specified'}
-**Gender:** ${userGender || 'Not specified'}
-
-**Personal Answers:**
-1. Motivation/Drive: ${openQ1}
-2. Challenge Response: ${openQ2}
-3. Dream World: ${openQ3}
-
-Based on this information, find the BEST matching anime character. Consider:
-- MBTI personality alignment
-- Character motivations and values
-- How they handle challenges
-- Their ideal world/goals
-- Character depth and development
-
-Respond with ONLY valid JSON in this exact format (no markdown, no extra text):
-{
-  "characterName": "Full Character Name",
-  "anime": "Anime Series Name",
-  "description": "2-3 sentences explaining why this character matches the user's personality, referencing their MBTI traits and personal answers",
-  "matchPercentage": 85,
-  "traits": ["trait1", "trait2", "trait3", "trait4"]
+function getFilteredCharacterCandidates(preferredGender) {
+  return Object.entries(CHARACTER_DB)
+    .filter(([, info]) => {
+      if (!preferredGender || preferredGender === 'Other') return true;
+      return info.gender === preferredGender;
+    })
+    .map(([name, info]) => `${name} (${info.series}, ${info.gender}, MBTI: ${info.mbti})`);
 }
 
-Requirements:
-- You MUST choose characterName from this exact allowlist only: ${allowedCharacters.join(', ')}
-- Never return any character outside this allowlist
-- matchPercentage should be between 75-95
-- traits should be 4 short personality traits (2-3 words each)
-- description must reference both MBTI and their personal answers
-- Response must be pure JSON only
+// Helper function to build the AI prompt
+function buildPrompt(mbtiType, openQ1, openQ2, openQ3, userName, userAge, userGender) {
+  const candidates = getFilteredCharacterCandidates(userGender);
+  const candidateNames = candidates.map((line) => line.split(' (')[0]);
+  const candidateList = candidates.length ? candidates.join('\n  - ') : '';
 
-Respond now:`.trim();
+  return `Task: Match the user to the single most compatible anime character from the provided list.
+
+USER PROFILE:
+- Name: ${userName || 'User'}
+- Age: ${userAge || 'Not specified'}
+- Gender Profile: ${userGender || 'Not specified'}
+- Primary MBTI (Calculated): ${mbtiType}
+
+PERSONAL ANSWERS:
+- Ideal World: "${openQ1}"
+- Internal Drive: "${openQ2}"
+- External Perception: "${openQ3}"
+
+CHARACTER CANDIDATES (Choose ONLY from this list, use the EXACT name):
+  - ${candidateList}
+
+MATCHING LOGIC:
+1. MBTI CONGRUENCE: Prioritize characters whose MBTI matches the Primary MBTI (${mbtiType}).
+2. PSYCHOLOGICAL ALIGNMENT: Use the personal answers to find deep trait alignment.
+3. GENDER CONSISTENCY: If the user selected Male/Female, choose a character with that gender.
+
+EXPECTED JSON RESPONSE (Strictly JSON, no markdown tags):
+{
+  "characterName": "Exact name from list",
+  "anime": "Anime Series Name",
+  "matchPercentage": 1,
+  "traits": ["Four", "Distinct", "Key", "Traits"],
+  "description": "A compelling 2-3 sentence explanation referencing MBTI ${mbtiType} and the user's answers."
+}
+
+STRICT REQUIREMENTS:
+- characterName MUST be EXACTLY one of: ${candidateNames.join(', ')}
+- anime MUST match the selected character's series from the candidate list
+- matchPercentage must be between 75-95
+- traits must be exactly 4 short traits (2-3 words each)
+- Output must be pure JSON only (no markdown, no backticks)
+`.trim();
 }
