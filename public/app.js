@@ -866,6 +866,13 @@ async function downloadCard() {
   if (!card) return;
 
   try {
+    const escapeHtml = (str) => (str || '').toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
     // Extract current result data from the rendered card
     const userRow = card.querySelector('.result-user-row');
     const userNameText = userRow ? userRow.querySelector('.result-user-name')?.textContent : '';
@@ -874,6 +881,28 @@ async function downloadCard() {
     const titleUser = card.querySelector('.result-title-user')?.textContent?.trim() || (state.userName || 'User');
     const titleChar = card.querySelector('.result-title-char')?.textContent?.trim() || 'Unknown';
     const animeName = (lastResult?.anime || '').toString().trim();
+    const safeTitleUser = escapeHtml(titleUser.toUpperCase());
+    const safeTitleChar = escapeHtml(titleChar.toUpperCase());
+    const safeAnimeName = escapeHtml(animeName.toUpperCase());
+    const gradId = `grad_${Date.now()}`;
+    const titleCharSvg = `
+      <svg width="900" height="140" viewBox="0 0 900 140" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#a78bfa"/>
+            <stop offset="50%" stop-color="#f472b6"/>
+            <stop offset="100%" stop-color="#fbbf24"/>
+          </linearGradient>
+        </defs>
+        <text x="50%" y="95" text-anchor="middle"
+          font-family="Cinzel Decorative, serif"
+          font-size="92"
+          font-weight="900"
+          letter-spacing="2"
+          fill="url(#${gradId})"
+          textLength="860" lengthAdjust="spacingAndGlyphs">${safeTitleChar}</text>
+      </svg>
+    `.trim();
 
     const desc = card.querySelector('.result-desc')?.textContent || '';
     const matchPct = card.querySelector('.match-pct-val')?.textContent || '0%';
@@ -920,17 +949,15 @@ async function downloadCard() {
         <!-- Title (match image-2 layout) -->
         <div style="width: 100%; margin-top: 26px; text-align: center;">
           <div style="font-family: 'Cinzel Decorative', serif; font-size: 2.8rem; letter-spacing: 6px; font-weight: 700; text-transform: uppercase; color: rgba(226, 232, 240, 0.9);">
-            ${titleUser}
+            ${safeTitleUser}
           </div>
           <div style="display: flex; align-items: center; justify-content: center; gap: 18px; margin: 10px 0 8px;">
             <div style="height: 1px; flex: 1; background: rgba(226, 232, 240, 0.25);"></div>
             <div style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 10px; font-weight: 800; color: rgba(167, 139, 250, 0.9);">AS</div>
             <div style="height: 1px; flex: 1; background: rgba(226, 232, 240, 0.25);"></div>
           </div>
-          <div style="font-family: 'Cinzel Decorative', serif; font-size: 4.2rem; line-height: 1.05; letter-spacing: 2px; font-weight: 900; text-transform: uppercase; background: linear-gradient(90deg, #a78bfa, #f472b6, #fbbf24); -webkit-background-clip: text; background-clip: text; color: transparent;">
-            ${titleChar}
-          </div>
-          ${animeName ? `<div style="margin-top: 10px; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 8px; text-transform: uppercase; color: rgba(148, 163, 184, 0.55);">${animeName}</div>` : ''}
+          ${titleCharSvg}
+          ${animeName ? `<div style="margin-top: 6px; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; letter-spacing: 8px; text-transform: uppercase; color: rgba(148, 163, 184, 0.55);">${safeAnimeName}</div>` : ''}
         </div>
 
         <div style="font-size: 1.4rem; line-height: 1.8; text-align: center; color: #cbd5e1; max-width: 850px;">
