@@ -83,6 +83,15 @@ export default async function handler(req, res) {
 
 // Helper function to build the AI prompt
 function buildPrompt(mbtiType, openQ1, openQ2, openQ3, userName, userAge, userGender) {
+  const allowedCharacters = [
+    'Sasuke Uchiha', 'Mei Mei', 'Erwin Smith', 'Sylvia Sherwood', 'Kakashi Hatake', 'Frieren',
+    'Satoru Gojo', 'Nico Robin', 'Itachi Uchiha', 'Tamayo', 'Gaara', 'Hinata Hyuga',
+    'Tanjiro Kamado', 'Tsunade', 'Naruto Uzumaki', 'Kyoko Hori', 'Levi Ackerman', 'Mikasa Ackerman',
+    'Isagi Yoichi', 'Noelle Silva', 'Kunigami Rensuke', 'Maki Zenin', 'Rock Lee', 'Sakura Haruno',
+    'Roronoa Zoro', 'Mereoleona Vermillion', 'Eren Yeager', 'Nezuko Kamado', 'Inosuke Hashibira',
+    'Temari', 'Asta', 'Kushina Uzumaki'
+  ];
+
   return `
 You are matching a person to an anime character based on their MBTI type and personal answers.
 
@@ -113,7 +122,8 @@ Respond with ONLY valid JSON in this exact format (no markdown, no extra text):
 }
 
 Requirements:
-- Choose from popular, well-known anime characters (Naruto, Death Note, Attack on Titan, My Hero Academia, Demon Slayer, Jujutsu Kaisen, One Piece, Hunter x Hunter, Fullmetal Alchemist, etc.)
+- You MUST choose characterName from this exact allowlist only: ${allowedCharacters.join(', ')}
+- Never return any character outside this allowlist
 - matchPercentage should be between 75-95
 - traits should be 4 short personality traits (2-3 words each)
 - description must reference both MBTI and their personal answers
